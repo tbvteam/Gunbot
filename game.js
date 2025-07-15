@@ -45,9 +45,9 @@ const characterType = localStorage.getItem("character") || "male";
 const characterImg = characterType === "nữ" ? femaleImg : maleImg;
 
 const enemyImg = new Image();
-enemyImg.src = "assets/images/enemy.png";
+enemyImg.src = "enemy.png";
 const bossImg = new Image();
-bossImg.src = "assets/images/boss.png";
+bossImg.src = "boss.png";
 
 const itemImages = {
   heal: new Image(),
