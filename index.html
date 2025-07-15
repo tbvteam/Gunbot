@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gunbot - Game</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    .section {
+      display: none;
+      padding: 20px;
+    }
+
+    .active {
+      display: block;
+    }
+
+    .hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .ctrl-btn {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid white;
+      border-radius: 10px;
+      color: white;
+      text-align: center;
+      line-height: 60px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      margin: auto;
+      background: black;
+    }
+    
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      background: #0f0;
+      color: black;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      width: 100%;
+      max-width: 300px;
+      font-size: 16px;
+    }
+
+    .login-container {
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    .character-select {
+      margin: 20px 0;
+    }
+
+    table {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #444;
+    }
+
+    th {
+      background: #333;
+      color: #0f0;
+    }
+
+    tr:nth-child(even) {
+      background: #1a1a1a;
+    }
+
+    #gameOverScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      padding: 30px;
+      border-radius: 20px;
+      display: none;
+      z-index: 20;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Đăng nhập -->
+<div id="loginSection" class="section active">
+  <div class="login-container">
+    <h2>🔐 Đăng nhập để chơi GunBot</h2>
+    <input type="text" id="username" placeholder="Nhập tên người chơi" required />
+    <div class="character-select">
+      <label><input type="radio" name="character" value="nam" checked> Nhân vật Nam</label>
+      <label><input type="radio" name="character" value="nữ"> Nhân vật Nữ</label>
+    </div>
+    <button onclick="startGame()">🎮 Bắt đầu chơi</button>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="gameSection" class="section">
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="gameControls" style="
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+">
+  <button onclick="toggleMusic()" id="musicBtn" style="
+    padding: 6px 10px;
+    font-size: 14px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: 1px solid white;
+    border-radius: 6px;
+  ">🔊 Tắt nhạc</button>
+</div>
+
+  <div class="hud">
+    ❤️ HP: <span id="hp">100</span><br>
+    ⚔️ Đam: <span id="damage">20</span><br>
+    🧟 Quái còn lại: <span id="enemyCount">0</span><br>
+    📦 Vòng: <span id="level">1</span>
+  </div>
+
+  <!-- Nút điều khiển nổi cho mobile -->
+<!-- Nút điều khiển nổi cho mobile -->
+<div id="mobileControls" style="position: absolute; bottom: 20px; left: 20px; z-index: 9999;">
+  <div style="display: flex; justify-content: center;">
+    <button onpointerdown="window.keys.up = true" onpointerup="window.keys.up = false">⬆️</button>
+  </div>
+  <div style="display: flex; justify-content: center; gap: 10px; margin-top: 5px;">
+    <button onpointerdown="window.keys.left = true" onpointerup="window.keys.left = false">⬅️</button>
+    <button onclick="shootBullet()" style="background: orange;">🔫</button>
+    <button onpointerdown="window.keys.right = true" onpointerup="window.keys.right = false">➡️</button>
+  </div>
+  <div style="display: flex; justify-content: center; margin-top: 5px;">
+    <button onpointerdown="window.keys.down = true" onpointerup="window.keys.down = false">⬇️</button>
+  </div>
+</div>
+
+<style>
+  #mobileControls button {
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 28px;
+    border: 2px solid white;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    touch-action: none;
+  }
+
+  #mobileControls button:active {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+</style>
+
+
+  <div id="gameOverScreen">
+    <h2>💀 Bạn đã bị tiêu diệt!</h2>
+    <p id="finalLevel">Bạn dừng lại ở vòng ...</p>
+    <button onclick="showSection('leaderboardSection')">🏆 Bảng xếp hạng</button>
+    <button onclick="resetGame()">🔁 Chơi lại</button>
+  </div>
+</div>
+
+<!-- Bảng xếp hạng -->
+<div id="leaderboardSection" class="section">
+  <h2>🏆 Bảng Xếp Hạng GunBot</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Thứ hạng</th>
+        <th>Tên</th>
+        <th>Vòng</th>
+        <th>Thời gian (giây)</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+  <button onclick="showSection('gameSection');"resetGame()">🔁 Chơi lại</button>
+
+  <button onclick="clearLeaderboard()">🗑️ Xoá bảng</button>
+</div>
+
+<script src="game.js"></script>
+<script>
+  function showSection(id) {
+    document.querySelectorAll(".section").forEach(el => el.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function startGame() {
+    const name = document.getElementById("username").value.trim();
+    const character = document.querySelector("input[name='character']:checked")?.value || "nam";
+    if (!name) {
+      alert("Vui lòng nhập tên người chơi!");
+      return;
+    }
+
+    localStorage.setItem("username", name);
+    localStorage.setItem("character", character);
+
+    showSection("gameSection");
+
+    const musicFrame = document.getElementById("musicFrame");
+    musicFrame?.contentWindow?.postMessage("playMusic", "*");
+
+    if (typeof initGame === "function") initGame(); // gọi lại game nếu cần
+  }
+
+  function move(dir) {
+    // Gắn vào hệ thống game nếu có
+    console.log("Move:", dir);
+  }
+
+  function shoot() {
+    // Gắn vào hệ thống game nếu có
+    console.log("Shoot!");
+  }
+
+  function loadLeaderboard() {
+    const data = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+    data.sort((a, b) => b.level - a.level || a.time - b.time);
+    const tbody = document.getElementById("leaderboardBody");
+    tbody.innerHTML = "";
+    data.forEach((e, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i+1}</td><td>${e.name}</td><td>${e.level}</td><td>${e.time}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function clearLeaderboard() {
+    if (confirm("Xoá bảng xếp hạng?")) {
+      localStorage.removeItem("leaderboard");
+      loadLeaderboard();
+    }
+  }
+
+  window.addEventListener("load", loadLeaderboard);
+<!-- Các phần nội dung khác -->
+
+  let bgMusic = new Audio("music.mp3");
+  bgMusic.loop = true;
+
+  function toggleMusic() {
+    if (bgMusic.paused) {
+      bgMusic.play();
+      document.getElementById("toggleMusicBtn").textContent = "🔇 Tắt nhạc";
+    } else {
+      bgMusic.pause();
+      document.getElementById("toggleMusicBtn").textContent = "🔊 Bật nhạc";
+    }
+  }
+
+  // Tự động phát khi nhấn nút bắt đầu chơi
+  function startGameWithMusic() {
+    bgMusic.play();
+    startGame(); // nếu bạn có hàm startGame() riêng
+  }
+</script>
+</body>
+
+</html>
